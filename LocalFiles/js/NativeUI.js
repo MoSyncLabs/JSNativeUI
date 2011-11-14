@@ -325,7 +325,7 @@ NativeUI.createWidget = function(widgetID, parentID) {
 		//Set the camera by default, We ony support one Camera Preview from JavaScript
 		if(widgetType == "CameraPreview")
 		{
-			bridge.Camera.maCameraSetPreview(handle);
+			return;
 		}
 		for(var i = 0; i<attributeList.length; i++) {
 			var attrName = attributeList[i].name;
