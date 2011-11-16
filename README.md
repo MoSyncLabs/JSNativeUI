@@ -1,7 +1,10 @@
 This project is a template for creating native user experience through HTML and JavaScript for MoSync cross platform SDK. For More information please refer to the Wiki page and http://www.mosync.com.
 You can always start from this page.
 
-Feel free to contact me with feedback and questions. 
+Note: This library is experimental and might not work perfectly well in some situations.  Due to some issues you might find instability problems on Android. If so, I recommend using the latest nightly build of MoSync SDK that includes fixes for Android issues.
+
+Feel free to contact me with feedback and questions.
+
 Ali Sarrafi
 
 LICENSE
