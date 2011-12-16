@@ -418,14 +418,17 @@ NativeUI.error = function(callbackID) {
  */
 NativeUI.event = function(widgetHandle, eventType) {
 	var callbackID = widgetHandle + eventType;
-	var callbackFun = NativeUI.eventCallBackTable[callbackID];
+	var callbackFunctions = NativeUI.eventCallBackTable[callbackID];
 	//if we have a listener registered for this combination  call it
-	if (callbackFun)
+	if (callbackFunctions)
 	{
 		//extract the function arguments 
 		var args = Array.prototype.slice.call(arguments);
-		// Call the function.
-		callbackFun.apply(null, args);
+		for (key in callbackFunctions) {
+			var callbackFun = callbackFunctions[key];
+			// Call the function.
+			callbackFun.apply(null, args);
+		}
 	}
 };
 
@@ -447,7 +450,15 @@ NativeUI.registerEventListener = function(
 	
 	var widgetHandle = NativeUI.widgetIDList[widgetID];
 	var callbackID = widgetHandle + eventType;
-	NativeUI.eventCallBackTable[callbackID] = callBackFunction;
+	if(NativeUI.eventCallBackTable[callbackID])
+	{
+		NativeUI.eventCallBackTable[callbackID].push(callBackFunction);
+	}
+	else
+	{
+		NativeUI.eventCallBackTable[callbackID] = [callBackFunction];
+	}
+	
 };
 
 /**
