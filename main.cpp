@@ -68,51 +68,138 @@ public:
 			//the returned handle to javascript
 			MAWidgetHandle widget =
 					maWidgetCreate(message.getParam("widgetType").c_str());
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 			const char* widgetID = message.getParam("widgetID").c_str();
+			if(widget <= 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, widget);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"NativeUI.createCallback('%s', '%s', %d)", callbackID, widgetID, widget);
+				callJS(buffer);
+			}
 
-			sprintf(buffer,"NativeUI.widgetCreated('%s', %d)", widgetID, widget);
-			callJS(buffer);
 		}
 		else if(message.is("maWidgetDestroy"))
 		{
 			MAWidgetHandle widget = stringToInteger(message.getParam("widget"));
-			maWidgetDestroy(widget);
+			int res = maWidgetDestroy(widget);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
+
 		}
 		else if(message.is("maWidgetAddChild"))
 		{
 			MAWidgetHandle parent = stringToInteger(message.getParam("parent"));
 			MAWidgetHandle child = stringToInteger(message.getParam("child"));
-			maWidgetAddChild(parent, child);
+			int res = maWidgetAddChild(parent, child);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetInsertChild"))
 		{
 			MAWidgetHandle parent = stringToInteger(message.getParam("parent"));
 			MAWidgetHandle child = stringToInteger(message.getParam("child"));
 			int index = stringToInteger(message.getParam("index"));
-			maWidgetInsertChild(parent, child, index);
+			int res = maWidgetInsertChild(parent, child, index);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetRemoveChild"))
 		{
 			MAWidgetHandle child = stringToInteger(message.getParam("child"));
-			maWidgetRemoveChild(child);
+			int res = maWidgetRemoveChild(child);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetModalDialogShow"))
 		{
 			MAWidgetHandle dialogHandle =
 					stringToInteger(message.getParam("dialogHandle"));
-			maWidgetModalDialogShow(dialogHandle);
+			int res = maWidgetModalDialogShow(dialogHandle);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetModalDialogHide"))
 		{
 			MAWidgetHandle dialogHandle =
 					stringToInteger(message.getParam("dialogHandle"));
-			maWidgetModalDialogHide(dialogHandle);
+			int res = maWidgetModalDialogHide(dialogHandle);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetScreenShow"))
 		{
 			MAWidgetHandle screenHandle =
 					stringToInteger(message.getParam("screenHandle"));
-			maWidgetScreenShow(screenHandle);
+			int res = maWidgetScreenShow(screenHandle);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetStackScreenPush"))
 		{
@@ -120,13 +207,35 @@ public:
 					stringToInteger(message.getParam("stackScreen"));
 			MAWidgetHandle newScreen =
 					stringToInteger(message.getParam("newScreen"));
-			maWidgetStackScreenPush(stackScreen, newScreen);
+			int res = maWidgetStackScreenPush(stackScreen, newScreen);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetStackScreenPop"))
 		{
 			MAWidgetHandle stackScreen =
 					stringToInteger(message.getParam("stackScreen"));
-			maWidgetStackScreenPop(stackScreen);
+			int res = maWidgetStackScreenPop(stackScreen);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetSetProperty"))
 		{
@@ -135,6 +244,17 @@ public:
 			const char *property = message.getParam("property").c_str();
 			const char *value = message.getParam("value").c_str();
 			int res = maWidgetSetProperty(widget, property, value);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		else if(message.is("maWidgetGetProperty"))
 		{
@@ -143,15 +263,18 @@ public:
 					stringToInteger(message.getParam("widget"));
 			const char *property = message.getParam("property").c_str();
 
-			maWidgetGetProperty(widget, property, value, 64);
-
-			sprintf(buffer,
-					"NativeUI.widgetProperty(%d, \"%s\", \"%s\")",
-					widget,
-					property,
-					value);
-
-			callJS(buffer);
+			int res = maWidgetGetProperty(widget, property, value, 64);
+			const char* callbackID = message.getParam("NativeUICallbackID").c_str();
+			if(res < 0)
+			{
+				sprintf(buffer,"'%s', %d", callbackID, res);
+				sendNativeUIError(buffer);
+			}
+			else
+			{
+				sprintf(buffer,"'%s', %s", callbackID, property);
+				sendNativeUISuccess(buffer);
+			}
 		}
 		//Call for loading an Image resource
 		else if(message.is("loadImage"))
@@ -333,6 +456,20 @@ public:
 
 private:
 	MAHandle mFileData;
+
+	void sendNativeUIError(const char *data)
+	{
+		char script[1024];
+		sprintf(script, "NativeUI.error(%s)", data);
+		callJS(script);
+	}
+	void sendNativeUISuccess(const char *data)
+	{
+		char script[1024];
+		sprintf(script, "NativeUI.success(%s)", data);
+		callJS(script);
+	}
+
 };
 
 /**
