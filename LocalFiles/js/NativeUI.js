@@ -411,6 +411,7 @@ NativeUI.error = function(callbackID) {
 /**
  * Is called by C++ when receiving a widget event. 
  * It in turn calls the registered listener for the specific Widget.
+ * You normally do not use this function is called internally.
  * 
  * @param widgetHandle C++ ID (MoSync Handle) of the widget that has triggered the event
  * @param eventType Type of the event (maybe followed by at most 3 event data variables)
@@ -462,6 +463,25 @@ NativeUI.registerEventListener = function(
 };
 
 /**
+ * Internal function used for synchronizing the widget operations.
+ * It makes sure that the widget is created before calling any other functions.
+ *   
+ */
+NativeUI.processedMessage = function()
+{
+	if(NativeUI.commandQueue.length > 0) 
+	{
+		NativeUI.commandQueue[0].func.apply(
+				null,
+				NativeUI.commandQueue[0].args);
+	}
+	if(NativeUI.commandQueue.length > 0) 
+	{
+		NativeUI.commandQueue.shift();
+	}
+};
+
+/**
  * 
  * A widget object that user can interact with instead of using the low 
  * level functions. It is used in 
@@ -477,7 +497,7 @@ NativeUI.NativeWidgetElement = function(
 		errorCallback)
 {
 	var self = this; 
-	
+
 	var type = widgetType;
 	
 	this.isScreen = ((type == "Screen") ||
@@ -494,24 +514,7 @@ NativeUI.NativeWidgetElement = function(
 	{
 		self.id = "natvieWidget" + Math.round(Math.random()*1000);
 	}
-	
-	/*
-	 * We use a queue of commands to make sure the commands are synchronized 
-	 */
-	function processedMessage(){
-		console.log("processed message with NativeUI.commandQueue.length " + NativeUI.commandQueue.length);
 		
-		if(NativeUI.commandQueue.length > 0) {
-			console.log("calling the next function" + NativeUI.commandQueue[0]);
-			NativeUI.commandQueue[0].func.apply(null, NativeUI.commandQueue[0].args);
-		}
-		if(NativeUI.commandQueue.length > 0) {
-			console.log("removing the called function from the queue");
-			NativeUI.commandQueue.shift();
-		}
-
-	}
-	
 	/**
 	 * Internal success function used for creation of the widget 
 	 * @private
@@ -544,7 +547,12 @@ NativeUI.NativeWidgetElement = function(
 	/*
 	 * Create the widget in the Native Side
 	 */
-	NativeUI.maWidgetCreate(widgetType, self.id, onSuccess, onError, processedMessage);
+	NativeUI.maWidgetCreate(
+			widgetType,
+			self.id,
+			onSuccess,
+			onError,
+			NativeUI.processedMessage);
 	
 	/**
 	 * sets a property to the widget in question 
@@ -563,7 +571,7 @@ NativeUI.NativeWidgetElement = function(
 					value,
 					successCallback,
 					errorCallback,
-					processedMessage);			
+					NativeUI.processedMessage);			
 		}
 		else
 		{
@@ -595,7 +603,7 @@ NativeUI.NativeWidgetElement = function(
 				property,
 				successCallback,
 				errorCallback,
-				processedMessage);
+				NativeUI.processedMessage);
 		}
 		else
 		{
@@ -640,7 +648,7 @@ NativeUI.NativeWidgetElement = function(
 					childID,
 					successCallback,
 					errorCallback,
-					processedMessage);
+					NativeUI.processedMessage);
 		}
 		else
 		{
@@ -670,7 +678,7 @@ NativeUI.NativeWidgetElement = function(
 					index,
 					successCallback, 
 					errorCallback,
-					processedMessage); 
+					NativeUI.processedMessage); 
 		}
 		else
 		{
@@ -689,6 +697,7 @@ NativeUI.NativeWidgetElement = function(
 	 * @param childID Id of the child widget that will be removed
 	 * @param successCallback a function that will be called if the operation is successfull
 	 * @param errorCallback a function that will be called if an error occurs
+	 * 
 	 */
 	this.removeChild = function(childID, successCallback, errorCallback)
 	{
@@ -698,7 +707,7 @@ NativeUI.NativeWidgetElement = function(
 					childID,
 					successCallback,
 					errorCallback,
-					processedMessage);
+					NativeUI.processedMessage);
 		}
 		else
 		{
@@ -711,7 +720,8 @@ NativeUI.NativeWidgetElement = function(
 	};
 	
 	/**
-	 * Shows a screen widget on the screen
+	 * Shows a screen widget on the screen. 
+	 * Will call the error callback if the widget is not of type screen.
 	 *  
 	 * @param successCallback a function that will be called if the operation is successfull
 	 * @param errorCallback a function that will be called if an error occurs
@@ -724,7 +734,7 @@ NativeUI.NativeWidgetElement = function(
 				NativeUI.maWidgetScreenShow(self.id,
 						successCallback,
 						errorCallback, 
-						processedMessage); 
+						NativeUI.processedMessage); 
 			}
 			else
 			{
@@ -744,12 +754,18 @@ NativeUI.NativeWidgetElement = function(
 	};
 	
 
-	
+
+	/**
+	 * Adds the current widget as a child to another widget.
+	 * 
+	 * @param parentId JavaScript ID of the parent widget.
+	 * @param successCallback (optional) a function that will be called when the operation is done successfully
+	 * @param errorCallback (optional) a function that will be called when the operation encounters an error
+	 * 
+	 */
 	this.addTo = function(parentId, successCallback, errorCallback) 
 	{
 		var parent = document.getNativeElementById(parentId);
-		console.log("adding " + self + " to " + parentId + "with status " + self.created);
-		
 		if((self.created) &&
 				(parent != undefined) && 
 				(parent.created) && 
@@ -760,7 +776,7 @@ NativeUI.NativeWidgetElement = function(
 					self.id,
 					successCallback,
 					errorCallback,
-					processedMessage);
+					NativeUI.processedMessage);
 		}
 		else
 		{
@@ -792,10 +808,17 @@ document.getNativeElementById = function(widgetID) {
 };
 
 /**
- * creates a widget and returns a NativeWidgetElement
+ * creates a widget and returns a NativeWidgetElement object.
+ * 
+ * usage:
+ *  var myButton = NativeUI.create("Button", "myButton");
+ *  
  * 
  * @param widgetType type of the widet that should be created
  * @param widgetID ID that will be used for refrencing to the widget
+ * @param successCallback (optional) a function that will be called when the operation is done successfully
+ * @param errorCallback (optional) a function that will be called when the operation encounters an error
+ * 
  * @returns {NativeUI.NativeWidgetElement}
  */
 NativeUI.create = function(
@@ -838,19 +861,9 @@ NativeUI.showInterval;
  */
 NativeUI.widgetIDList = {};
 
-/**
- * Looks up the widget Type in the widgetType Table
- * 
- * @param widgetTagName lower case conversion of the tag name 
- * returned by the browser 
- * @returns The MoSync value for that widget
- */
-NativeUI.getWidgetType = function(widgetTagName) {
-  		return NativeUI.widgetList[widgetTagName.toLowerCase()];
-};
 
 /**
- * Provides access to handles through IDs.
+ * Provides access to C++ handles through IDs.
  * @param elementID ID of the widget in question
  * @returns MoSync handle value for that widget
  */
@@ -870,73 +883,80 @@ NativeUI.createWidget = function(widget, parent) {
 	var widgetType = widgetNode.getAttribute("widgetType");
 	NativeUI.numWidgetsRequested++;	
 	var attributeList = widgetNode.attributes;
-	NativeUI.create(widgetType, widgetID, function(widgetID, handle){
-	var thisWidget = document.getNativeElementById(widgetID);
-	NativeUI.numWidgetsRequested--;
-
-		//Set the camera by default, We ony support one Camera Preview from JavaScript
-		if(widgetType == "CameraPreview")
-		{
-			return;
-		}
-		for(var i = 0; i<attributeList.length; i++) 
-		{
-			if(attributeList[i].specified)
-			{
-				var attrName = attributeList[i].name;
-				var attrvalue = attributeList[i].value;
-				if((attrName != "id")  && (attrName != "widgettype")) {
-	  				if(attrName == "onevent") {
-	  					var functionData =   attrvalue.split(")")[0];
-	  					thisWidget.addEventListener("Clicked", 
-	 
-	 							function(widgetHandle, eventType){
-			  						//TODO: Improve event function parsing mechanism and use 
-			  						// Function object for better performance
-			  						var newParamPrefix = 
-			  							(functionData.charAt(functionData.length-1) == "(")? "" : ",";
-			  						
-			  						eval(functionData + 
-			  								newParamPrefix + 
-			  								widgetHandle + 
-			  								",'" + 
-			  								eventType +
-			  								"')");
-	  							});
-	  				}
-	  				else if((attrName == "image") || (attrName == "icon")){
-	  					bridge.ResourceHandler.loadImage(
-	  							attrvalue,
-	  							widgetID + "image",
-	  							function(imageID, imageHandle) {
-	  								thisWidget.setProperty(attrName, imageHandle, null, null);
-	  					});
-	  				}
-	  				else {
-	  					thisWidget.setProperty(attrName, attrvalue, null, null);
-	   				}
+	
+	NativeUI.create(widgetType, widgetID, 
+			function(widgetID, handle){
+				var thisWidget = document.getNativeElementById(widgetID);
+				NativeUI.numWidgetsRequested--;
+			
+				//Set the camera by default, We only support Camera Preview from JavaScript Code
+				if(widgetType == "CameraPreview")
+				{
+					return;
 				}
-				
-			}
-		}
-		if(parent != null) {
-			var currentParent = document.getNativeElementById(parent.id);
-			currentParent.addChild(widgetID, null, null);
-		} 
+				for(var i = 0; i<attributeList.length; i++) 
+				{
+					//TODO: Add more event types and translate the attributes.
+					if(attributeList[i].specified)
+					{
+						var attrName = attributeList[i].name;
+						var attrvalue = attributeList[i].value;
+						if((attrName != "id")  && (attrName != "widgettype")) {
+			  				if(attrName == "onevent") {
+			  					var functionData =   attrvalue.split(")")[0];
+			  					thisWidget.addEventListener("Clicked", 
+			 
+			 							function(widgetHandle, eventType){
+					  						//TODO: Improve event function parsing mechanism and use 
+					  						// Function object for better performance
+					  						var newParamPrefix = 
+					  							(functionData.charAt(functionData.length-1) == "(")? "" : ",";
+					  						eval(functionData + 
+					  								newParamPrefix + 
+					  								widgetHandle + 
+					  								",'" + 
+					  								eventType +
+					  								"')");
+			  							});
+			  				}
+			  				else if((attrName == "image") || (attrName == "icon")){
+			  					bridge.ResourceHandler.loadImage(
+			  							attrvalue,
+			  							widgetID + "image",
+			  							function(imageID, imageHandle) {
+			  								thisWidget.setProperty(attrName, imageHandle, null, null);
+			  					});
+			  				}
+			  				else {
+			  					thisWidget.setProperty(attrName, attrvalue, null, null);
+			   				}
+						}
+					}
+				}
+				if(parent != null) {
+					var currentParent = document.getNativeElementById(parent.id);
+					currentParent.addChild(widgetID, null, null);
+				}
+				//End of Closure
 	}, null);
 };
 
 /**
  * A function that is called when the UI is ready.
  * By default it loads the element with ID "mainScreen"
- * Can be overridden by the user
+ * Override this function to add extra functionality. 
+ * See NativeUI.initUI for more information
  */
 NativeUI.UIReady = function() {
+	// This is the low level way of showing the default screen 
+	// If you want to override this fucntion,
+	// use document.getNativeElementById instead
 	NativeUI.maWidgetScreenShow("mainScreen");
 };
 
 /**
- * Recursively creates the UI
+ * Recursively creates the UI from the HTML5 markup.
+ * 
  * @param parentid ID of the parent Widget
  * @param id ID of the currewnt widget
  */
@@ -971,6 +991,7 @@ NativeUI.createChilds = function(parent, widget) {
 
 /**
  * Checks the status of UI and calls UIReady when it is ready.
+ * @internal
  */
 NativeUI.CheckUIStatus = function()
 {
@@ -982,7 +1003,11 @@ NativeUI.CheckUIStatus = function()
 };
 
 /**
- * Shows a MoSync Screen, used by users to change the current screen
+ * Shows a MoSync Screen, can be used to change the current screen.
+ * 
+ * usage example:
+ *  NativeUI.showScreen("myNewScreen");
+ * 
  * @param screenID
  */
 NativeUI.showScreen = function(screenID)
@@ -995,7 +1020,20 @@ NativeUI.showScreen = function(screenID)
 };
 
 /**
- * Initializes the UI system and parsing of the XML input
+ * Initializes the UI system and parsing of the XML input.
+ * This function should be called when the document body is loaded.
+ * 
+ * usage:
+ *  <body onload="NativeUI.initUI()">
+ *  
+ *  After finalizing the widgets, the UI system will call the UIReady function.
+ *  In order to add your operation you can override the UIReady function as below:
+ *  
+ *  NativeUI.UIReady = function()
+ *  {
+ *  //Do something, and show your main screen 
+ *  }
+ *  
  */
 NativeUI.initUI = function()
 {

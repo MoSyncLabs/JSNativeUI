@@ -13,14 +13,17 @@
 <!DOCTYPE html>
 
 <html>
+
 <head>
+
+<!-- Import MoSync Constants Library. -->
+<script src="js/maapi.js"></script>
 
 <!-- Import the bridge library. -->
 <script src="js/bridge.js"></script>
 
 <!-- Import Native UI Library. -->
 <script src="js/NativeUI.js"></script>
-
 
 <!-- Import Resource Handler. -->
 <script src="js/resourceHandler.js"></script>
@@ -34,12 +37,12 @@
 	*/
 	function keyPressEvent(keyCode) {
 		//Close the Application if the Back key is pressed
-		//if(keyCode == MoSyncConstants.MAK_BACK) {
+		if(keyCode == MoSyncConstants.MAK_BACK) {
 			// Call close to exit the application.
 			bridge.messagehandler.send({
 				"messageName" : "close"
 			}, null);
-		//}
+		}
 	}
 	
 	/**
@@ -50,20 +53,27 @@
 	* - eventType type of the event triggered
 	*/
 	function handleButtonEvent(message) {
-		alert('You Clicked the Button');
+		console.log('You Clicked the Button');
 	}
 
 	var numclicked = 0;
 	
+	/**
+	* A simple function that updateds a label on screen
+	*/
 	function changeLabel()
 	{
 			var myLabel = document.getNativeElementById("myLabel");
 			
 			myLabel.setProperty(
 					"text", 
-					"You clicked the button " + ++numclicked + "times");
+					"You've clicked the button " + ++numclicked + " times");
 	}
 	
+	/**
+	* Event comming from the library indicating the UI is ready to be shown
+	* We override the default operation of the library to add some new functionality. 
+	*/
 	NativeUI.UIReady = function()
 	{		
 		var mainScreen = document.getNativeElementById("mainScreen");
@@ -73,6 +83,9 @@
 		myButton.addEventListener("Clicked", changeLabel);
 	}
 	
+	/**
+	* Initialize the NativeUI System 
+	*/
 	function initialize()
 	{
 		NativeUI.initUI();
