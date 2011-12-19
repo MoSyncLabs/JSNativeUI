@@ -499,13 +499,17 @@ NativeUI.NativeWidgetElement = function(
 	 * We use a queue of commands to make sure the commands are synchronized 
 	 */
 	function processedMessage(){
-		if(NativeUI.commandQueue.length > 0) {
-			NativeUI.commandQueue.shift();
-		}
+		console.log("processed message with NativeUI.commandQueue.length " + NativeUI.commandQueue.length);
 		
 		if(NativeUI.commandQueue.length > 0) {
-			NativeUI.commandQueue[0].call;
+			console.log("calling the next function" + NativeUI.commandQueue[0]);
+			NativeUI.commandQueue[0].func.apply(null, NativeUI.commandQueue[0].args);
 		}
+		if(NativeUI.commandQueue.length > 0) {
+			console.log("removing the called function from the queue");
+			NativeUI.commandQueue.shift();
+		}
+
 	}
 	
 	/**
@@ -563,13 +567,13 @@ NativeUI.NativeWidgetElement = function(
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
-					self.setProperty(
-							property,
-							value,
-							successCallback,
-							errorCallback));
-		}
+					NativeUI.commandQueue.push(
+							{func:self.setProperty,
+							args:[property,
+							      value,
+							      successCallback,
+							      errorCallback]});	
+			}
 	};
 	
 	/**
@@ -586,7 +590,7 @@ NativeUI.NativeWidgetElement = function(
 	{
 		if(self.created)
 		{
-		NativeUI.maWidgetGetProperty(
+			NativeUI.maWidgetGetProperty(
 				self.id,
 				property,
 				successCallback,
@@ -596,10 +600,10 @@ NativeUI.NativeWidgetElement = function(
 		else
 		{
 			NativeUI.commandQueue.push(
-					self.getProperty(
-							property,
-							successCallback,
-							errorCallback));			
+					{func:self.getProperty,
+					args:[property,
+					successCallback,
+					errorCallback]});			
 		}
 	};
 	
@@ -612,19 +616,10 @@ NativeUI.NativeWidgetElement = function(
 	 */
 	this.addEventListener = function(eventType, listenerFunction) 
 	{
-		if(self.created)
-		{
-			NativeUI.registerEventListener(
-					self.id,
-					eventType,
-					listenerFunction); 
-		}
-		else
-		{
-			NativeUI.commandQueue.push(
-					self.addEventListener(eventType, listenerFunction)
-					);			
-		}		
+		NativeUI.registerEventListener(
+			self.id,
+			eventType,
+			listenerFunction); 
 	};
 	
 	/**
@@ -650,10 +645,10 @@ NativeUI.NativeWidgetElement = function(
 		else
 		{
 			NativeUI.commandQueue.push(
-				self.addChild(
-						childID,
+					{func:self.addChild,
+					args:[childID,
 						successCallback,
-						errorCallback));			
+						errorCallback]});	
 		}
 	};
 	
@@ -680,11 +675,11 @@ NativeUI.NativeWidgetElement = function(
 		else
 		{
 			NativeUI.commandQueue.push(
-				self.insertChild(
-						childID,
+					{func:self.insertChild,
+					args:[childID,
 						index,
 						successCallback,
-						errorCallback));			
+						errorCallback]});
 		}
 	};
 	
@@ -708,13 +703,20 @@ NativeUI.NativeWidgetElement = function(
 		else
 		{
 			NativeUI.commandQueue.push(
-				self.removeChild(
-						childID,
+					{func:self.removeChild,
+					args:[childID,
 						successCallback,
-						errorCallback));			
+						errorCallback]});		
 		}
 	};
 	
+	/**
+	 * Shows a screen widget on the screen
+	 *  
+	 * @param successCallback a function that will be called if the operation is successfull
+	 * @param errorCallback a function that will be called if an error occurs
+	 *
+	 */
 	this.show = function(successCallback, errorCallback) {
 		if(self.created)
 		{
@@ -735,9 +737,42 @@ NativeUI.NativeWidgetElement = function(
 		else
 		{
 			NativeUI.commandQueue.push(
-					self.show(successCallback, errorCallback)
-					);			
+					{func:self.show,
+					args:[successCallback,
+						errorCallback]});		
 		}		
+	};
+	
+
+	
+	this.addTo = function(parentId, successCallback, errorCallback) 
+	{
+		var parent = document.getNativeElementById(parentId);
+		console.log("adding " + self + " to " + parentId + "with status " + self.created);
+		
+		if((self.created) &&
+				(parent != undefined) && 
+				(parent.created) && 
+				(self.created != undefined))
+		{
+			NativeUI.maWidgetAddChild(
+					parentId,
+					self.id,
+					successCallback,
+					errorCallback,
+					processedMessage);
+		}
+		else
+		{
+			NativeUI.commandQueue.push(
+					{func:self.addTo,
+					args:[
+							parentId,
+							successCallback,
+							errorCallback
+						]
+					});			
+		}
 	};
 	// add the current widget to the table
 	NativeUI.NativeElementsTable[this.id] = this;
@@ -752,7 +787,7 @@ NativeUI.NativeWidgetElement = function(
  * @param widgetID the ID attribute used for identifying the widget in DOM
  *  
  */
-document.getNativeElemnetById = function(widgetID) {
+document.getNativeElementById = function(widgetID) {
 	return NativeUI.NativeElementsTable[widgetID];
 };
 
@@ -836,7 +871,7 @@ NativeUI.createWidget = function(widget, parent) {
 	NativeUI.numWidgetsRequested++;	
 	var attributeList = widgetNode.attributes;
 	NativeUI.create(widgetType, widgetID, function(widgetID, handle){
-	var thisWidget = document.getNativeElemnetById(widgetID);
+	var thisWidget = document.getNativeElementById(widgetID);
 	NativeUI.numWidgetsRequested--;
 
 		//Set the camera by default, We ony support one Camera Preview from JavaScript
@@ -844,43 +879,48 @@ NativeUI.createWidget = function(widget, parent) {
 		{
 			return;
 		}
-		for(var i = 0; i<attributeList.length; i++) {
-			var attrName = attributeList[i].name;
-			var attrvalue = attributeList[i].value;
-			if((attrName != "id")  && (attrName != "widgettype")) {
-  				if(attrName == "onevent") {
-  					var functionData =   attrvalue.split(")")[0];
-  					thisWidget.addEventListener("Clicked", 
- 
- 							function(widgetHandle, eventType){
-		  						//TODO: Improve event function parsing mechanism and use 
-		  						// Function object for better performance
-		  						var newParamPrefix = 
-		  							(functionData.charAt(functionData.length-1) == "(")? "" : ",";
-		  						
-		  						eval(functionData + 
-		  								newParamPrefix + 
-		  								widgetHandle + 
-		  								",'" + 
-		  								eventType +
-		  								"')");
-  							});
-  				}
-  				else if((attrName == "image") || (attrName == "icon")){
-  					bridge.ResourceHandler.loadImage(
-  							attrvalue,
-  							widgetID + "image",
-  							function(imageID, imageHandle) {
-  								thisWidget.setProperty(attrName, imageHandle, null, null);
-  					});
-  				}
-  				else {
-  					thisWidget.setProperty(attrName, attrvalue, null, null);
-   				}
+		for(var i = 0; i<attributeList.length; i++) 
+		{
+			if(attributeList[i].specified)
+			{
+				var attrName = attributeList[i].name;
+				var attrvalue = attributeList[i].value;
+				if((attrName != "id")  && (attrName != "widgettype")) {
+	  				if(attrName == "onevent") {
+	  					var functionData =   attrvalue.split(")")[0];
+	  					thisWidget.addEventListener("Clicked", 
+	 
+	 							function(widgetHandle, eventType){
+			  						//TODO: Improve event function parsing mechanism and use 
+			  						// Function object for better performance
+			  						var newParamPrefix = 
+			  							(functionData.charAt(functionData.length-1) == "(")? "" : ",";
+			  						
+			  						eval(functionData + 
+			  								newParamPrefix + 
+			  								widgetHandle + 
+			  								",'" + 
+			  								eventType +
+			  								"')");
+	  							});
+	  				}
+	  				else if((attrName == "image") || (attrName == "icon")){
+	  					bridge.ResourceHandler.loadImage(
+	  							attrvalue,
+	  							widgetID + "image",
+	  							function(imageID, imageHandle) {
+	  								thisWidget.setProperty(attrName, imageHandle, null, null);
+	  					});
+	  				}
+	  				else {
+	  					thisWidget.setProperty(attrName, attrvalue, null, null);
+	   				}
+				}
+				
 			}
 		}
 		if(parent != null) {
-			var currentParent = document.getNativeElemnetById(parent.id);
+			var currentParent = document.getNativeElementById(parent.id);
 			currentParent.addChild(widgetID, null, null);
 		} 
 	}, null);

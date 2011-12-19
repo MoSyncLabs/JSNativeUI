@@ -292,7 +292,10 @@ public:
 
 		// Tell the WebView that we have processed the message, so that
 		// it can send the next one.
+		char replyScript[256];
+		sprintf(replyScript, "bridge.messagehandler.reply(%s)", message.getParam("callbackId").c_str());
 		callJS("bridge.messagehandler.processedMessage()");
+		callJS(replyScript);
 	}
 
 	MAHandle loadImageResource(const char *imagePath)

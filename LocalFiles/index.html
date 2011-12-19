@@ -21,8 +21,6 @@
 <!-- Import Native UI Library. -->
 <script src="js/NativeUI.js"></script>
 
-<!-- Import MoSync's API Library. -->
-<script src="js/maapi.js"></script>
 
 <!-- Import Resource Handler. -->
 <script src="js/resourceHandler.js"></script>
@@ -36,12 +34,12 @@
 	*/
 	function keyPressEvent(keyCode) {
 		//Close the Application if the Back key is pressed
-		if(keyCode == MoSyncConstants.MAK_BACK) {
+		//if(keyCode == MoSyncConstants.MAK_BACK) {
 			// Call close to exit the application.
 			bridge.messagehandler.send({
 				"messageName" : "close"
 			}, null);
-		}
+		//}
 	}
 	
 	/**
@@ -54,17 +52,25 @@
 	function handleButtonEvent(message) {
 		alert('You Clicked the Button');
 	}
+
+	var numclicked = 0;
+	
+	function changeLabel()
+	{
+			var myLabel = document.getNativeElementById("myLabel");
+			
+			myLabel.setProperty(
+					"text", 
+					"You clicked the button " + ++numclicked + "times");
+	}
 	
 	NativeUI.UIReady = function()
-	{
-		
-		var mainScreen = document.getNativeElemnetById("mainScreen");
+	{		
+		var mainScreen = document.getNativeElementById("mainScreen");
 		mainScreen.show();
 		
-		var myButton = document.getNativeElemnetById("myButton");
-		myButton.addEventListener("Clicked", function(){
-			myButton.setProperty("text", "Already clicked");
-		});
+		var myButton = document.getNativeElementById("myButton");
+		myButton.addEventListener("Clicked", changeLabel);
 	}
 	
 	function initialize()
