@@ -34,6 +34,7 @@ var bridge = function()
 
 	self.messagehandler = function()
 	{
+		var userAgent = navigator.userAgent.toLowerCase();
 		var self = {};
 		var callbackTable = {};
 		var callbackIdCounter = 0;
@@ -126,8 +127,10 @@ var bridge = function()
 			if (1 == messageQueue.length)
 			{
 				// No messages waiting, send it.
+				var isWP = (userAgent.indexOf("ie") != -1) ? true : false;
 				setTimeout(function() {
-					document.location = messageUrl; },
+					if(true == isWP) window.external.notify(messageUrl); 
+					else document.location = messageUrl; },
 					1);
 			}
 		};
@@ -148,7 +151,9 @@ var bridge = function()
 			// message in the queue.
 			if (messageQueue.length > 0)
 			{
-				document.location = messageQueue[0];
+				var isWP = (userAgent.indexOf("ie") != -1) ? true : false;
+				if(true == isWP) window.external.notify(messageQueue[0]);
+				else document.location = messageQueue[0];
 			}
 		};
 
