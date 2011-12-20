@@ -175,6 +175,7 @@ var bridge = function()
 		 */
 		self.reply = function(callbackId)
 		{
+			console.log("reply for callback ID " +  callbackId);
 			var callbackFun = callbackTable[callbackId];
 			if (undefined != callbackFun)
 			{

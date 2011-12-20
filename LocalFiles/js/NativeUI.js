@@ -53,7 +53,8 @@ NativeUI.maWidgetCreate = function(
 	callbackID = "create" + widgetID;
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetCreate",
+				"messageName" : "NativeUI",
+				"action": "maWidgetCreate",
 				"widgetType": widgetType,
 				"widgetID" : widgetID,
 				"NativeUICallbackID": callbackID
@@ -82,7 +83,8 @@ NativeUI.maWidgetDestroy = function(
 	var mosyncWidgetHandle = NativeUI.widgetIDList[widgetID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetDestroy",
+				"messageName" : "NativeUI",
+				"action": "maWidgetDestroy",
 				"widget": mosyncWidgetHandle,
 				"NativeUICallbackID": callbackID
 			}, processedCallback);
@@ -114,7 +116,8 @@ NativeUI.maWidgetAddChild = function(
 	var mosyncChildHandle = NativeUI.widgetIDList[childID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetAddChild",
+				"messageName" : "NativeUI",
+				"action": "maWidgetAddChild",
 				"parent": mosyncWidgetHandle,
 				"child" : mosyncChildHandle,
 				"NativeUICallbackID": callbackID
@@ -150,7 +153,8 @@ NativeUI.maWidgetInsertChild = function(
 	var mosyncChildHandle = NativeUI.widgetIDList[childID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetInsertChild",
+				"messageName" : "NativeUI",
+				"action": "maWidgetInsertChild",
 				"parent": mosyncWidgetHandle,
 				"child" : mosyncChildHandle,
 				"index" : index,
@@ -181,7 +185,8 @@ NativeUI.maWidgetRemoveChild = function(
 	var mosyncChildHandle = NativeUI.widgetIDList[childID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetRemoveChild",
+				"messageName" : "NativeUI",
+				"action": "maWidgetRemoveChild",
 				"child" : mosyncChildHandle,
 				"NativeUICallbackID": callbackID
 			}, processedCallback);
@@ -210,7 +215,8 @@ NativeUI.maWidgetScreenShow = function(
 	var mosyncScreenHandle = NativeUI.widgetIDList[screenID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetScreenShow",
+				"messageName" : "NativeUI",
+				"action": "maWidgetScreenShow",
 				"screenHandle": mosyncScreenHandle,
 				"NativeUICallbackID": callbackID
 			}, processedCallback);
@@ -244,7 +250,8 @@ NativeUI.maWidgetStackScreenPush = function(
 	var mosyncScreenHandle = NativeUI.widgetIDList[screenID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetStackScreenPush",
+				"messageName" : "NativeUI",
+				"action": "maWidgetStackScreenPush",
 				"stackScreen": mosyncStackScreenHandle,
 				"newScreen":mosyncScreenHandle,
 				"NativeUICallbackID": callbackID
@@ -278,7 +285,8 @@ NativeUI.maWidgetStackScreenPop = function(
 	var mosyncStackScreenHandle = NativeUI.widgetIDList[stackScreenID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetStackScreenPop",
+				"messageName" : "NativeUI",
+				"action": "maWidgetStackScreenPop",
 				"stackScreen": mosyncStackScreenHandle,
 				"NativeUICallbackID": callbackID
 			}, processedCallback);
@@ -306,12 +314,14 @@ NativeUI.maWidgetSetProperty = function(
 		errorCallback,
 		processedCallback)
 {
+	
 	//make sure the id is unique for this call
 	callbackID = "setProperty" + widgetID + property + value; 
 	var widgetHandle = NativeUI.widgetIDList[widgetID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetSetProperty",
+				"messageName" : "NativeUI",
+				"action": "maWidgetSetProperty",
 				"widget": widgetHandle,
 				"property": property,
 				"value": value,
@@ -344,7 +354,8 @@ NativeUI.maWidgetGetProperty = function(
 	var widgetHandle = NativeUI.widgetIDList[widgetID];
 	bridge.messagehandler.send(
 			{
-				"messageName": "maWidgetGetProperty",
+				"messageName" : "NativeUI",
+				"action": "maWidgetGetProperty",
 				"widget": widgetHandle,
 				"property": property,
 				"NativeUICallbackID": callbackID
@@ -418,14 +429,17 @@ NativeUI.error = function(callbackID) {
  * 
  */
 NativeUI.event = function(widgetHandle, eventType) {
+
 	var callbackID = widgetHandle + eventType;
+	console.log("received an event for " + callbackID); 
 	var callbackFunctions = NativeUI.eventCallBackTable[callbackID];
 	//if we have a listener registered for this combination  call it
-	if (callbackFunctions)
+	if (callbackFunctions != undefined)
 	{
 		//extract the function arguments 
 		var args = Array.prototype.slice.call(arguments);
 		for (key in callbackFunctions) {
+			console.log("calling the callback no. " + key);
 			var callbackFun = callbackFunctions[key];
 			// Call the function.
 			callbackFun.apply(null, args);
@@ -469,12 +483,14 @@ NativeUI.registerEventListener = function(
  */
 NativeUI.processedMessage = function()
 {
+	console.log("sending the next command");
 	if(NativeUI.commandQueue.length > 0) 
 	{
 		NativeUI.commandQueue[0].func.apply(
 				null,
 				NativeUI.commandQueue[0].args);
 	}
+	console.log("removing the already sent command.");
 	if(NativeUI.commandQueue.length > 0) 
 	{
 		NativeUI.commandQueue.shift();
@@ -581,7 +597,7 @@ NativeUI.NativeWidgetElement = function(
 							      value,
 							      successCallback,
 							      errorCallback]});	
-			}
+		}
 	};
 	
 	/**
@@ -872,6 +888,152 @@ NativeUI.getElementById = function(elementID) {
 };
 
 /**
+ * An internal function that returns the correct property name 
+ * Used to overcome case sensitivity problems in browsers.
+ * 
+ * @param attributeName name of the attribute used in HTML markup
+ * @returns new name for the attribute
+ */
+NativeUI.getNativeAttrName = function(attributeName)
+{
+	switch(attributeName.toLowerCase())
+	{
+	case "fontsize":
+		return "fontSize";
+		break;
+	case "fontcolor":
+		return "fontColor";
+		break;
+	case "backgrouncolor":
+		return "backgroundColor";
+		break;
+	case "backgroundgradient":
+		return "backgroundGradient";
+		break;
+	case "currenttab":
+		return "currentTab";
+		break;
+	case "backbuttonenabled":
+		return "backButtonEnabled";
+		break;
+	case "textverticalalignment":
+		return "textVerticalAlignment";
+		break;
+	case "texthorizontalalignment":
+		return "textHorizontalAlignment";
+		break;
+	case "fonthandle":
+		return "fontHandle";
+		break;
+	case "maxnumberoflines":
+		return "maxNumberOfLines";
+		break;
+	case "backgroundimage":
+		return "backgroundImage";
+		break;
+	case "scalemode":
+		return "scaleMode";
+		break;
+	case "showkeyboard":
+		return "showKeyboard";
+		break;
+	case "editmode":
+		return "editMode";
+		break;
+	case "inputmode":
+		return "inputMode";
+		break;
+	case "inputflag":
+		return "inputFlag";
+		break;
+	case "accessorytype":
+		return "accessoryType";
+		break;
+	case "childverticalalignment":
+		return "childVerticalAlignment";
+		break;
+	case "childhorizontalalignment":
+		return "childHorizontalAlignment";
+		break;
+	case "paddingtop":
+		return "paddingTop";
+		break;
+	case "paddingleft":
+		return "paddingLeft";
+		break;
+	case "paddingright":
+		return "paddingRight";
+		break;
+	case "paddingbottom":
+		return "paddingBottom";
+		break;
+	case "softhook":
+		return "softHook";
+		break;
+	case "hardhook":
+		return "hardHook";
+		break;
+	case "horizontalscrollbarenabled":
+		return "horizontalScrollBarEnabled";
+		break;
+	case "verticalscrollbarenabled":
+		return "verticalScrollBarEnabled";
+		break;
+	case "enablezoom":
+		return "enableZoom";
+		break;
+	case "incrementprogress":
+		return "incrementProgress";
+		break;
+	case "inprogress":
+		return "inProgress";
+		break;
+	case "increasevalue":
+		return "increaseValue";
+		break;
+	case "decreasevalue":
+		return "decreaseValue";
+		break;
+	case "maxdate":
+		return "maxDate";
+		break;
+	case "mindate":
+		return "minDate";
+		break;
+	case "dayofmonth":
+		return "dayOfMonth";
+		break;
+	case "currenthour":
+		return "currentHour";
+		break;
+	case "currentminute":
+		return "currentMinute";
+		break;
+	case "minvalue":
+		return "minValue";
+		break;
+	case "maxvalue":
+		return "maxValue";
+		break;
+		
+	default:
+		return attributeName;
+	}
+};
+
+NativeUI.getNativeAttrValue = function(value) 
+{
+	switch(value.toLowerCase())
+	{
+	case "100%":
+		return "-1";
+		break;
+	default:
+		return value;
+	}		
+};
+
+/**
  * Creates a widget, sets its property and adds it to its parent.
  * @param widgetID ID of the widget in question
  * @param parentID Id of the parentWidget
@@ -899,41 +1061,40 @@ NativeUI.createWidget = function(widget, parent) {
 					//TODO: Add more event types and translate the attributes.
 					if(attributeList[i].specified)
 					{
-						var attrName = attributeList[i].name;
-						var attrvalue = attributeList[i].value;
-						if((attrName != "id")  && (attrName != "widgettype")) {
-			  				if(attrName == "onevent") {
-			  					var functionData =   attrvalue.split(")")[0];
-			  					thisWidget.addEventListener("Clicked", 
-			 
+						var attrName = NativeUI.getNativeAttrName(attributeList[i].name);
+						var attrValue = NativeUI.getNativeAttrValue(attributeList[i].value);
+						console.log("setting " + attrName + " for " + thisWidget.id);
+						if((attrName != "id")  &&
+								(attrName != "widgettype") && 
+								(attrValue != null))
+						{
+			  				if(attrName == "onevent")
+			  				{
+			  					var functionData =   attrValue;
+			  					thisWidget.addEventListener("Clicked",
 			 							function(widgetHandle, eventType){
-					  						//TODO: Improve event function parsing mechanism and use 
-					  						// Function object for better performance
-					  						var newParamPrefix = 
-					  							(functionData.charAt(functionData.length-1) == "(")? "" : ",";
-					  						eval(functionData + 
-					  								newParamPrefix + 
-					  								widgetHandle + 
-					  								",'" + 
-					  								eventType +
-					  								"')");
+					  						//TODO: Improve event function parsing mechanism
+					  						eval(functionData);
 			  							});
 			  				}
-			  				else if((attrName == "image") || (attrName == "icon")){
-			  					bridge.ResourceHandler.loadImage(
-			  							attrvalue,
+			  				else if((attrName == "image") || (attrName == "icon"))
+			  				{
+			  					ResourceHandler.loadImage(
+			  							attrValue,
 			  							widgetID + "image",
 			  							function(imageID, imageHandle) {
 			  								thisWidget.setProperty(attrName, imageHandle, null, null);
 			  					});
 			  				}
-			  				else {
-			  					thisWidget.setProperty(attrName, attrvalue, null, null);
+			  				else
+			  				{
+			  					thisWidget.setProperty(attrName, attrValue, null, null);
 			   				}
 						}
 					}
 				}
-				if(parent != null) {
+				if(parent != null)
+				{
 					var currentParent = document.getNativeElementById(parent.id);
 					currentParent.addChild(widgetID, null, null);
 				}
