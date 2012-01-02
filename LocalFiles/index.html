@@ -65,6 +65,7 @@
 	{
 			var myLabel = document.getNativeElementById("myLabel");
 			
+			//set the text property of our label.
 			myLabel.setProperty(
 					"text", 
 					"No. of Clicks: " + (++numclicked));
@@ -76,11 +77,27 @@
 	*/
 	NativeUI.UIReady = function()
 	{		
+		//First get an instance of the scree nwe want to show
 		var mainScreen = document.getNativeElementById("mainScreen");
+		//show the screen
 		mainScreen.show();
 		
+		//Get an instacne of the button created in the markup
 		var myButton = document.getNativeElementById("myButton");
+		//add an event listener to it
 		myButton.addEventListener("Clicked", changeLabel);
+		
+		
+		//Create a new button and add an event listener to it
+		var secondButton = NativeUI.create("Button" ,"SecondButton", {
+			//properties of the button
+			"width": "100%",
+			"text": "Second Button"
+		});
+		secondButton.addTo("mainLayout");
+		secondButton.addEventListener("Clicked", function() {
+			alert("second button is cliecked");
+		});
 	}
 	
 	/**
@@ -104,7 +121,7 @@
 			</div>
 			<div widgetType="Screen" id="SecondScreen" title="Widget Screen">
 				<div widgetType="VerticalLayout" id="mainLayout" width="-1" height="-1">
-					<div widgetType="Label" id="myLabel" width="100%" text="Here is a Label" fontSize="15" fontColor="0xEE3B3B"></div>
+					<div widgetType="Label" id="myLabel" width="100%" text="Here is a Label" fontSize="19" fontColor="0xEE3B3B"></div>
 					<div widgetType="Button" id="myButton" width="100%" text="Click !" ></div>
 				</div>
 			</div>

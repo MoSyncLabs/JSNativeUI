@@ -30,7 +30,6 @@ NativeUI.eventCallBackTable = {};
  */
 NativeUI.widgetCounter = 0;
 
-NativeUI.commandQueue = [];
 
 /**
  * Creates a NativeUI Widget and registers it callback for return of the handle 
@@ -433,13 +432,14 @@ NativeUI.event = function(widgetHandle, eventType) {
 	var callbackID = widgetHandle + eventType;
 	console.log("received an event for " + callbackID); 
 	var callbackFunctions = NativeUI.eventCallBackTable[callbackID];
+	console.log("calling the callback " + callbackFunctions);
 	//if we have a listener registered for this combination  call it
 	if (callbackFunctions != undefined)
 	{
 		//extract the function arguments 
 		var args = Array.prototype.slice.call(arguments);
 		for (key in callbackFunctions) {
-			console.log("calling the callback no. " + key);
+			
 			var callbackFun = callbackFunctions[key];
 			// Call the function.
 			callbackFun.apply(null, args);
@@ -460,42 +460,22 @@ NativeUI.NativeElementsTable = {};
 NativeUI.registerEventListener = function(
 		widgetID,
 		eventType,
-		callBackFunction)
+		listenerFunction)
 {
-	
 	var widgetHandle = NativeUI.widgetIDList[widgetID];
 	var callbackID = widgetHandle + eventType;
+	console.log("registering event listener for " + callbackID + " which is " + listenerFunction);
 	if(NativeUI.eventCallBackTable[callbackID])
 	{
-		NativeUI.eventCallBackTable[callbackID].push(callBackFunction);
+		NativeUI.eventCallBackTable[callbackID].push(listenerFunction);
 	}
 	else
 	{
-		NativeUI.eventCallBackTable[callbackID] = [callBackFunction];
+		NativeUI.eventCallBackTable[callbackID] = [listenerFunction];
 	}
 	
 };
 
-/**
- * Internal function used for synchronizing the widget operations.
- * It makes sure that the widget is created before calling any other functions.
- *   
- */
-NativeUI.processedMessage = function()
-{
-	console.log("sending the next command");
-	if(NativeUI.commandQueue.length > 0) 
-	{
-		NativeUI.commandQueue[0].func.apply(
-				null,
-				NativeUI.commandQueue[0].args);
-	}
-	console.log("removing the already sent command.");
-	if(NativeUI.commandQueue.length > 0) 
-	{
-		NativeUI.commandQueue.shift();
-	}
-};
 
 /**
  * 
@@ -509,12 +489,37 @@ NativeUI.processedMessage = function()
 NativeUI.NativeWidgetElement = function(
 		widgetType,
 		widgetID,
+		params,
 		successCallback,
 		errorCallback)
 {
 	var self = this; 
 
+	self.commandQueue = [];
+	
+	self.params = params;
+	
+	self.eventQueue = [];
+	
 	var type = widgetType;
+	/**
+	 * Internal function used for synchronizing the widget operations.
+	 * It makes sure that the widget is created before calling any other functions.
+	 *   
+	 */
+	this.processedMessage = function()
+	{
+		if(self.commandQueue.length > 0) 
+		{
+			self.commandQueue[0].func.apply(
+					null,
+					self.commandQueue[0].args);
+		}
+		if(self.commandQueue.length > 0) 
+		{
+			self.commandQueue.shift();
+		}
+	};
 	
 	this.isScreen = ((type == "Screen") ||
 			(type == "TabScreen") ||
@@ -528,7 +533,8 @@ NativeUI.NativeWidgetElement = function(
 	}
 	else
 	{
-		self.id = "natvieWidget" + Math.round(Math.random()*1000);
+		self.id = "natvieWidget" + widgetType + NativeUI.widgetCounter;
+		NativeUI.widgetCounter++;
 	}
 		
 	/**
@@ -539,8 +545,24 @@ NativeUI.NativeWidgetElement = function(
 	{		
 		self.created = true;
 		self.handle = widgetHandle;
-		
-		
+		if(self.params)
+		{
+			for(key in self.params)
+			{
+				var propertyName = NativeUI.getNativeAttrName(key);
+				var propertyValue = NativeUI.getNativeAttrValue(self.params[key]);
+				self.setProperty(propertyName, propertyValue, null, null);
+			}
+		}
+		if(self.eventQueue)
+		{
+			for(key in self.eventQueue)
+			{
+				self.addEventListener(
+						self.eventQueue[key].event, 
+						self.eventQueue[key].callback);
+			}
+		}
 		if(successCallback)
 		{
 			
@@ -568,7 +590,7 @@ NativeUI.NativeWidgetElement = function(
 			self.id,
 			onSuccess,
 			onError,
-			NativeUI.processedMessage);
+			self.processedMessage);
 	
 	/**
 	 * sets a property to the widget in question 
@@ -587,11 +609,11 @@ NativeUI.NativeWidgetElement = function(
 					value,
 					successCallback,
 					errorCallback,
-					NativeUI.processedMessage);			
+					self.processedMessage);			
 		}
 		else
 		{
-					NativeUI.commandQueue.push(
+					self.commandQueue.push(
 							{func:self.setProperty,
 							args:[property,
 							      value,
@@ -619,11 +641,11 @@ NativeUI.NativeWidgetElement = function(
 				property,
 				successCallback,
 				errorCallback,
-				NativeUI.processedMessage);
+				self.processedMessage);
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
+			self.commandQueue.push(
 					{func:self.getProperty,
 					args:[property,
 					successCallback,
@@ -640,10 +662,22 @@ NativeUI.NativeWidgetElement = function(
 	 */
 	this.addEventListener = function(eventType, listenerFunction) 
 	{
-		NativeUI.registerEventListener(
-			self.id,
-			eventType,
-			listenerFunction); 
+		if(self.created)
+		{
+			NativeUI.registerEventListener(
+					self.id,
+					eventType,
+					listenerFunction); 
+		}
+		else
+		{
+			self.eventQueue.push(
+					{
+						event: eventType,
+						callback: listenerFunction
+					});			
+		}
+
 	};
 	
 	/**
@@ -664,11 +698,11 @@ NativeUI.NativeWidgetElement = function(
 					childID,
 					successCallback,
 					errorCallback,
-					NativeUI.processedMessage);
+					self.processedMessage);
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
+			self.commandQueue.push(
 					{func:self.addChild,
 					args:[childID,
 						successCallback,
@@ -694,11 +728,11 @@ NativeUI.NativeWidgetElement = function(
 					index,
 					successCallback, 
 					errorCallback,
-					NativeUI.processedMessage); 
+					self.processedMessage); 
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
+			self.commandQueue.push(
 					{func:self.insertChild,
 					args:[childID,
 						index,
@@ -723,11 +757,11 @@ NativeUI.NativeWidgetElement = function(
 					childID,
 					successCallback,
 					errorCallback,
-					NativeUI.processedMessage);
+					self.processedMessage);
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
+			self.commandQueue.push(
 					{func:self.removeChild,
 					args:[childID,
 						successCallback,
@@ -750,7 +784,7 @@ NativeUI.NativeWidgetElement = function(
 				NativeUI.maWidgetScreenShow(self.id,
 						successCallback,
 						errorCallback, 
-						NativeUI.processedMessage); 
+						self.processedMessage); 
 			}
 			else
 			{
@@ -762,7 +796,7 @@ NativeUI.NativeWidgetElement = function(
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
+			self.commandQueue.push(
 					{func:self.show,
 					args:[successCallback,
 						errorCallback]});		
@@ -792,11 +826,11 @@ NativeUI.NativeWidgetElement = function(
 					self.id,
 					successCallback,
 					errorCallback,
-					NativeUI.processedMessage);
+					self.processedMessage);
 		}
 		else
 		{
-			NativeUI.commandQueue.push(
+			self.commandQueue.push(
 					{func:self.addTo,
 					args:[
 							parentId,
@@ -840,12 +874,14 @@ document.getNativeElementById = function(widgetID) {
 NativeUI.create = function(
 		widgetType,
 		widgetID,
+		params,
 		successCallback,
 		errorCallback)
 {
 	var widget = new NativeUI.NativeWidgetElement(
 			widgetType,
 			widgetID,
+			params,
 			successCallback,
 			errorCallback);
 	return widget;
@@ -1046,7 +1082,7 @@ NativeUI.createWidget = function(widget, parent) {
 	NativeUI.numWidgetsRequested++;	
 	var attributeList = widgetNode.attributes;
 	
-	NativeUI.create(widgetType, widgetID, 
+	NativeUI.create(widgetType, widgetID, null,
 			function(widgetID, handle){
 				var thisWidget = document.getNativeElementById(widgetID);
 				NativeUI.numWidgetsRequested--;
