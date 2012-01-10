@@ -58,35 +58,37 @@ ResourceMessageHandler::~ResourceMessageHandler()
  * This function is used to detect different messages from JavaScript
  * and call the respective function in MoSync.
  *
- * @return true if message was handled, false if not.
+ * @return true if stream was handled, false if not.
  */
-bool ResourceMessageHandler::handleMessage(WebViewMessage& message)
+bool ResourceMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 {
 
 	char buffer[128];
-	if(message.getParam("action") == "loadImage")
+	const char * action = stream.getNext();
+	if(0 == strcmp("loadImage", action))
 	{
+		const char *imagePath = stream.getNext();
+		const char* imageID = stream.getNext();
 		//Call for loading an Image resource
 		MAHandle imageHandle =
-				loadImageResource(message.getParam("imagePath").c_str());
+				loadImageResource(imagePath);
 
-		const char* imageID = message.getParam("imageID").c_str();
 		sprintf(buffer,
-				"ResourceHandler.imageLoaded(\"%s\", %d)",
+				"mosync.resource.imageLoaded(\"%s\", %d)",
 				imageID,
 				imageHandle);
 		mWebView->callJS(buffer);
 	}
-	else if(message.getParam("action") == "loadRemoteImage")
+	else if(0 == strcmp("loadRemoteImage", action))
 	{
-		MAHandle imageHandle = maCreatePlaceholder();
-		const char* imageID = message.getParam("imageID").c_str();
-		const char* imageURL = message.getParam("imageURL").c_str();
+		const char* imageID = stream.getNext();
+		const char* imageURL = stream.getNext();
 
+		MAHandle imageHandle = maCreatePlaceholder();
 		mImageDownloader->beginDownloading(imageURL,imageHandle);
 
 		sprintf(buffer,
-				"ResourceHandler.imageDownloadStarted(\"%s\", %d)",
+				"mosync.resource.imageDownloadStarted(\"%s\", %d)",
 				imageID,
 				imageHandle);
 		mWebView->callJS(buffer);
@@ -165,7 +167,7 @@ void ResourceMessageHandler::error(Downloader* downloader, int code)
 void ResourceMessageHandler::finishedDownloading(Downloader* downloader,
 		MAHandle data) {
 	char buffer[256];
-	sprintf(buffer, "ResourceHandler.imageDownloadFinished(%d)", data);
+	sprintf(buffer, "mosync.resource.imageDownloadFinished(%d)", data);
 	mWebView->callJS(buffer);
 
 }

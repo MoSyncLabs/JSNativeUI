@@ -29,6 +29,7 @@ MA 02110-1301, USA.
 #include "NativeUIMessageHandler.h"
 #include "MAHeaders.h"
 
+
 // NameSpaces we want to access.
 using namespace MAUtil; // Class Moblet, String
 using namespace NativeUI; // WebView widget
@@ -57,21 +58,24 @@ NativeUIMessageHandler::~NativeUIMessageHandler()
  * This function is used to detect different messages from JavaScript
  * and call the respective function in MoSync.
  *
- * @return true if message was handled, false if not.
+ * @return true if stream was handled, false if not.
  */
-bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
+bool NativeUIMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 {
 
 	char buffer[128];
+	const char * action = stream.getNext();
 
 	// Widget Handling Calls
-	if(message.getParam("action") == "maWidgetCreate")
+	if(0 == strcmp("maWidgetCreate", action))
 	{
-		MAWidgetHandle widget =
-				maWidgetCreate(message.getParam("widgetType").c_str());
+		const char * widgetType = stream.getNext();
+		const char* widgetID = stream.getNext();
+		const char* callbackID = stream.getNext();
 
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
-		const char* widgetID = message.getParam("widgetID").c_str();
+		MAWidgetHandle widget =
+				maWidgetCreate(widgetType);
+
 
 		if(widget <= 0)
 		{
@@ -83,7 +87,7 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			//We use a special callback for widget creation
 			sprintf(
 					buffer,
-					"NativeUI.createCallback('%s', '%s', %d)",
+					"mosync.nativeui.createCallback('%s', '%s', %d)",
 					callbackID,
 					widgetID,
 					widget);
@@ -91,11 +95,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 		}
 
 	}
-	else if(message.getParam("action") == "maWidgetDestroy")
+	else if(0 == strcmp("maWidgetDestroy", action))
 	{
-		MAWidgetHandle widget = stringToInteger(message.getParam("widget"));
+		MAWidgetHandle widget = stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
+
 		int res = maWidgetDestroy(widget);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -108,12 +113,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 		}
 
 	}
-	else if(message.getParam("action") == "maWidgetAddChild")
+	else if(0 == strcmp("maWidgetAddChild", action) )
 	{
-		MAWidgetHandle parent = stringToInteger(message.getParam("parent"));
-		MAWidgetHandle child = stringToInteger(message.getParam("child"));
+		MAWidgetHandle parent = stringToInteger(stream.getNext());
+		MAWidgetHandle child = stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetAddChild(parent, child);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -125,13 +130,13 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetInsertChild")
+	else if(0 == strcmp("maWidgetInsertChild", action))
 	{
-		MAWidgetHandle parent = stringToInteger(message.getParam("parent"));
-		MAWidgetHandle child = stringToInteger(message.getParam("child"));
-		int index = stringToInteger(message.getParam("index"));
+		MAWidgetHandle parent = stringToInteger(stream.getNext());
+		MAWidgetHandle child = stringToInteger(stream.getNext());
+		int index = stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetInsertChild(parent, child, index);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -143,11 +148,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetRemoveChild")
+	else if(0 == strcmp("maWidgetRemoveChild", action))
 	{
-		MAWidgetHandle child = stringToInteger(message.getParam("child"));
+		MAWidgetHandle child = stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
+
 		int res = maWidgetRemoveChild(child);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -159,12 +165,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetModalDialogShow")
+	else if(0 == strcmp("maWidgetModalDialogShow", action))
 	{
 		MAWidgetHandle dialogHandle =
-				stringToInteger(message.getParam("dialogHandle"));
+				stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetModalDialogShow(dialogHandle);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -176,12 +182,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetModalDialogHide")
+	else if(0 == strcmp("maWidgetModalDialogHide", action))
 	{
 		MAWidgetHandle dialogHandle =
-				stringToInteger(message.getParam("dialogHandle"));
+				stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetModalDialogHide(dialogHandle);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -193,12 +199,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetScreenShow")
+	else if(0 == strcmp("maWidgetScreenShow", action))
 	{
 		MAWidgetHandle screenHandle =
-				stringToInteger(message.getParam("screenHandle"));
+				stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetScreenShow(screenHandle);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -210,14 +216,14 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetStackScreenPush")
+	else if(0 == strcmp("maWidgetStackScreenPush", action))
 	{
 		MAWidgetHandle stackScreen =
-				stringToInteger(message.getParam("stackScreen"));
+				stringToInteger(stream.getNext());
 		MAWidgetHandle newScreen =
-				stringToInteger(message.getParam("newScreen"));
+				stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetStackScreenPush(stackScreen, newScreen);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -229,12 +235,12 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetStackScreenPop")
+	else if(0 == strcmp("maWidgetStackScreenPop", action))
 	{
 		MAWidgetHandle stackScreen =
-				stringToInteger(message.getParam("stackScreen"));
+				stringToInteger(stream.getNext());
+		const char* callbackID = stream.getNext();
 		int res = maWidgetStackScreenPop(stackScreen);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -246,14 +252,15 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetSetProperty")
+	else if(0 == strcmp("maWidgetSetProperty", action))
 	{
 		MAWidgetHandle widget =
-				stringToInteger(message.getParam("widget"));
-		const char *property = message.getParam("property").c_str();
-		const char *value = message.getParam("value").c_str();
+				stringToInteger(stream.getNext());
+		const char *property = stream.getNext();
+		const char *value = stream.getNext();
+		const char* callbackID = stream.getNext();
+
 		int res = maWidgetSetProperty(widget, property, value);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -265,15 +272,15 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 			sendNativeUISuccess(buffer);
 		}
 	}
-	else if(message.getParam("action") == "maWidgetGetProperty")
+	else if(0 == strcmp("maWidgetGetProperty", action))
 	{
 		char value[64];
 		MAWidgetHandle widget =
-				stringToInteger(message.getParam("widget"));
-		const char *property = message.getParam("property").c_str();
+				stringToInteger(stream.getNext());
+		const char *property = stream.getNext();
+		const char* callbackID = stream.getNext();
 
 		int res = maWidgetGetProperty(widget, property, value, 64);
-		const char* callbackID = message.getParam("NativeUICallbackID").c_str();
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -286,13 +293,14 @@ bool NativeUIMessageHandler::handleMessage(WebViewMessage& message)
 		}
 	}
 
-	// Tell the WebView that we have processed the message, so that
+	// Tell the WebView that we have processed the stream, so that
 	// it can send the next one.
 	char replyScript[256];
+	const char * mosyncCallBackId = stream.getNext();
 	sprintf(
 			replyScript,
-			"bridge.messagehandler.reply(%s)",
-			message.getParam("callbackId").c_str());
+			"mosync.bridge.reply(%s)",
+			mosyncCallBackId);
 	mWebView->callJS(replyScript);
 
 }
@@ -384,7 +392,7 @@ void NativeUIMessageHandler::customEvent(const MAEvent& event)
 				break;
 		}
 		sprintf(buffer,
-				"NativeUI.event(%d, \"%s\", %d, %d, %d)",
+				"mosync.nativeui.event(%d, \"%s\", %d, %d, %d)",
 				widget,
 				eventType,
 				firstParameter,
@@ -398,14 +406,14 @@ void NativeUIMessageHandler::customEvent(const MAEvent& event)
 void NativeUIMessageHandler::sendNativeUIError(const char *data)
 {
 	char script[1024];
-	sprintf(script, "NativeUI.error(%s)", data);
+	sprintf(script, "mosync.nativeui.error(%s)", data);
 	mWebView->callJS(script);
 }
 
 void NativeUIMessageHandler::sendNativeUISuccess(const char *data)
 {
 	char script[1024];
-	sprintf(script, "NativeUI.success(%s)", data);
+	sprintf(script, "mosync.nativeui.success(%s)", data);
 	mWebView->callJS(script);
 }
 

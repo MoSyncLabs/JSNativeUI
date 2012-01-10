@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="1.2">
-<active.build.cfg active="Release"/>
-<target-profile device="iPhone" vendor="Apple"/>
+<active.build.cfg active="Debug"/>
+<target-profile device="Android 2.x" vendor="Android"/>
 <properties>
 <property key="privileged.access.token" value="B0D6342429E817DC84A4D80FB58ECCC9"/>
 </properties>

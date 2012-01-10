@@ -1,13 +1,15 @@
 /**
  * @file main.cpp
- * @author Ali Sarraf, Iraklis Rosis
  *
- * Template application for developing NativeUI Apps in JavaScript
- * Do not Modify this file unless you know what you are doing
+ * Sample application that illustrates how to call into C++
+ * from JavaScript.
  */
 
-// Include Moblet for web applications.
 #include <Wormhole/WebAppMoblet.h>
+#include <conprint.h>
+#include "MessageProtocol.h"
+#include "MessageStream.h"
+#include "MessageStreamJSON.h"
 #include "NativeUIMessageHandler.h"
 #include "ResourceMessageHandler.h"
 
@@ -29,7 +31,6 @@ public:
 		// Create message handler for Resources.
 		mResourceMessageHandler = new ResourceMessageHandler(getWebView());
 
-
 		// Enable message sending from JavaScript to C++.
 		enableWebViewMessages();
 
@@ -38,49 +39,16 @@ public:
 		getWebView()->disableZoom();
 		getWebView()->setVisible(false);
 
+		// Remove this line to enable the user to
+		// zoom the web page. To disable zoom is one
+		// way of making web pages display in a
+		// reasonable degault size on devices with
+		// different screen sizes.
+		getWebView()->enableZoom();
 
 		// The page in the "LocalFiles" folder to
 		// show when the application starts.
-		//The page contains calls into the Native UI System
 		showPage("index.html");
-
-		//We have added this class as a custom event listener so it
-		//can forward all of the custom events to JavaScript
-		Environment::getEnvironment().addCustomEventListener(this);
-	}
-
-	/**
-	 * This method handles messages sent from the WebView.
-	 * @param webView The WebView that sent the message.
-	 * @param urlData Data object that holds message content.
-	 * Note that the data object will be valid only during
-	 * the life-time of the call of this method, then it
-	 * will be deallocated.
-	 */
-	void handleWebViewMessage(WebView* webView, MAHandle urlData)
-	{
-		// Create message object. This parses the message.
-		WebViewMessage message(webView, urlData);
-		char buffer[128];
-		if(message.is("NativeUI"))
-		{
-			//Forward NativeUI messages to the respective message handler
-			mNativeUIMessageHandler->handleMessage(message);
-		}
-		if(message.is("Resource"))
-		{
-			//Forward Resource messages to the respective message handler
-			mResourceMessageHandler->handleMessage(message);
-		}
-		else if (message.is("close"))
-		{
-			//Close the App by request from JavaScript
-			close();
-		}
-
-		// Tell the WebView that we have processed the message, so that
-		// it can send the next one.
-		callJS("bridge.messagehandler.processedMessage()");
 	}
 
 	/**
@@ -100,21 +68,91 @@ public:
 
 		callJS(buffer);
 	}
-
 	/**
-	 * This method is called whenever a custom
-	 * event is fired.
-	 * It is used to forward events to the JavaScript side.
+	 * This method handles messages sent from the WebView.
+	 * @param webView The WebView that sent the message.
+	 * @param urlData Data object that holds message content.
+	 * Note that the data object will be valid only during
+	 * the life-time of the call of this method, then it
+	 * will be deallocated.
 	 */
-	void customEvent (const MAEvent &event)
+	void handleWebViewMessage(WebView* webView, MAHandle data)
 	{
-		//Do nothing yet
+		Wormhole::MessageProtocol protocol(data);
+
+		if (protocol.isMessageStream())
+		{
+			 handleMessageStream(webView, data);
+		}
+		else if (protocol.isMessageArrayJSON())
+		{
+			 handleMessageStreamJSON(webView, data);
+		}
+		else
+		{
+			lprintfln("undefined message protocol");
+		}
 	}
 
+	void handleMessageStream(WebView* webView, MAHandle data)
+	{
+		Wormhole::MessageStream stream(webView, data);
+
+		const char* p;
+
+		while (p = stream.getNext())
+		{
+			if (0 == strcmp(p, "NativeUI"))
+			{
+				lprintfln("received a NativeUI Message .......");
+				//Forward NativeUI messages to the respective message handler
+				mNativeUIMessageHandler->handleMessage(stream);
+			}
+			else if (0 == strcmp(p, "Resource"))
+			{
+				//Forward Resource messages to the respective message handler
+				mResourceMessageHandler->handleMessage(stream);
+			}
+			else if (0 == strcmp(p, "close"))
+			{
+				close();
+			}
+		}
+	}
+
+	void handleMessageStreamJSON(WebView* webView, MAHandle data)
+	{
+		Wormhole::MessageStreamJSON message(webView, data);
+
+		while (message.next())
+		{
+			handleJSONMessage(message);
+		}
+	}
+
+	void handleJSONMessage(Wormhole::MessageStreamJSON& message)
+	{
+		if (message.is("JSONMessage"))
+		{
+			// No action.
+		}
+		else if (message.is("JSONMessageEnd"))
+		{
+			callJS("JSONMessageEnd()");
+		}
+		else if (message.is("JSONRoundtripMessage"))
+		{
+			callJS("JSONRoundtripCallback()");
+		}
+		else
+		{
+			lprintfln("@@@ C++ Unknown message");
+		}
+	}
 private:
-	MAHandle mFileData;
 	NativeUIMessageHandler* mNativeUIMessageHandler;
 	ResourceMessageHandler* mResourceMessageHandler;
+
 };
 
 /**

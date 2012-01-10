@@ -32,7 +32,7 @@ MA 02110-1301, USA.
 #include <NativeUI/WebView.h>
 #include <MAUtil/String.h>
 #include <MAUtil/Downloader.h>
-
+#include "MessageStream.h"
 
 /**
  * Class that implements JavaScript calls.
@@ -57,7 +57,7 @@ public:
 	 * Implementation of standard API exposed to JavaScript.
 	 * @return true if message was handled, false if not.
 	 */
-	bool handleMessage(Wormhole::WebViewMessage& message);
+	bool handleMessage(Wormhole::MessageStream& message);
 
 	/**
 	 * Is called if the downloads is canceled.

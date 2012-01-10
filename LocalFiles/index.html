@@ -20,13 +20,13 @@
 <script src="js/maapi.js"></script>
 
 <!-- Import the bridge library. -->
-<script src="js/bridge.js"></script>
+<script src="js/mosync-bridge.js"></script>
 
 <!-- Import Native UI Library. -->
-<script src="js/NativeUI.js"></script>
+<script src="js/mosync-nativeui.js"></script>
 
 <!-- Import Resource Handler. -->
-<script src="js/resourceHandler.js"></script>
+<script src="js/mosync-resource.js"></script>
 
 
 
@@ -39,9 +39,9 @@
 		//Close the Application if the Back key is pressed
 		if(keyCode == MoSyncConstants.MAK_BACK) {
 			// Call close to exit the application.
-			bridge.messagehandler.send({
-				"messageName" : "close"
-			}, null);
+			mosync.bridge.send([
+				"close"
+			], null);
 		}
 	}
 	
@@ -75,7 +75,7 @@
 	* Event comming from the library indicating the UI is ready to be shown
 	* We override the default operation of the library to add some new functionality. 
 	*/
-	NativeUI.UIReady = function()
+	mosync.nativeui.UIReady = function()
 	{		
 		//First get an instance of the scree nwe want to show
 		var mainScreen = document.getNativeElementById("mainScreen");
@@ -89,34 +89,36 @@
 		
 		
 		//Create a new button and add an event listener to it
-		var secondButton = NativeUI.create("Button" ,"SecondButton", {
+		var secondButton = mosync.nativeui.create("Button" ,"SecondButton", 
+		{
 			//properties of the button
 			"width": "100%",
 			"text": "Second Button"
 		});
 		secondButton.addTo("mainLayout");
-		secondButton.addEventListener("Clicked", function() {
+		secondButton.addEventListener("Clicked", function() 
+		{
 			alert("second button is cliecked");
 		});
 	}
 	
 	/**
-	* Initialize the NativeUI System 
+	* Initialize the mosync.nativeui System 
 	*/
 	function initialize()
 	{
-		NativeUI.initUI();
+		mosync.nativeui.initUI();
 	}
 </script>
 
 </head>
 
 <body  onload="initialize()">
-	<!-- All of the NativeUI widgets should be wraped inside a tag with id="NativeUI" -->
+	<!-- All of the mosync.nativeui widgets should be wraped inside a tag with id="mosync.nativeui" -->
 	<div id="NativeUI">
 		<!-- the element with id="mainScreen" is loaded to the device screen  by default -->
 		<div widgetType="TabScreen" id="mainScreen">
-			<div widgetType="Screen" id="firstScreen" title="Web Screen" icon="img/TabIconWebView.png">
+			<div widgetType="Screen" id="firstScreen" title="Web Screen">
 				<div widgetType="WebView" id="WebBrowser" width="100%" height="100%" url="http://www.google.com"></div>
 			</div>
 			<div widgetType="Screen" id="SecondScreen" title="Widget Screen">
