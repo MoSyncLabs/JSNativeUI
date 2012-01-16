@@ -65,18 +65,16 @@ bool NativeUIMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 
 	char buffer[128];
 	const char * action = stream.getNext();
-
 	// Widget Handling Calls
 	if(0 == strcmp("maWidgetCreate", action))
 	{
-		const char * widgetType = stream.getNext();
+		const char* widgetType = stream.getNext();
 		const char* widgetID = stream.getNext();
 		const char* callbackID = stream.getNext();
+		int numParams = stringToInteger(stream.getNext());
 
 		MAWidgetHandle widget =
 				maWidgetCreate(widgetType);
-
-
 		if(widget <= 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, widget);
@@ -84,6 +82,15 @@ bool NativeUIMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 		}
 		else
 		{
+			if(numParams > 0)
+			{
+				for(int i = 0; i < numParams/2; i++)
+				{
+					const char* property = stream.getNext();
+					const char* value = stream.getNext();
+					int res = maWidgetSetProperty(widget, property, value);
+				}
+			}
 			//We use a special callback for widget creation
 			sprintf(
 					buffer,
@@ -259,8 +266,8 @@ bool NativeUIMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 		const char *property = stream.getNext();
 		const char *value = stream.getNext();
 		const char* callbackID = stream.getNext();
-
 		int res = maWidgetSetProperty(widget, property, value);
+		lprintfln("SetProperty: %d, %s, %s\n", widget, property, value);
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -274,13 +281,13 @@ bool NativeUIMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 	}
 	else if(0 == strcmp("maWidgetGetProperty", action))
 	{
-		char value[64];
+		char value[1024];
 		MAWidgetHandle widget =
 				stringToInteger(stream.getNext());
-		const char *property = stream.getNext();
+		const char* property = stream.getNext();
 		const char* callbackID = stream.getNext();
 
-		int res = maWidgetGetProperty(widget, property, value, 64);
+		int res = maWidgetGetProperty(widget, property, value, 1024);
 		if(res < 0)
 		{
 			sprintf(buffer,"'%s', %d", callbackID, res);
@@ -288,20 +295,24 @@ bool NativeUIMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 		}
 		else
 		{
-			sprintf(buffer,"'%s', %s", callbackID, property);
+			sprintf(buffer,"'%s', '%s', '%s'", callbackID, property, value);
 			sendNativeUISuccess(buffer);
 		}
 	}
 
 	// Tell the WebView that we have processed the stream, so that
 	// it can send the next one.
+
 	char replyScript[256];
 	const char * mosyncCallBackId = stream.getNext();
-	sprintf(
-			replyScript,
-			"mosync.bridge.reply(%s)",
-			mosyncCallBackId);
-	mWebView->callJS(replyScript);
+	if(mosyncCallBackId != NULL)
+	{
+		sprintf(
+				replyScript,
+				"mosync.bridge.reply(%s)",
+				mosyncCallBackId);
+		mWebView->callJS(replyScript);
+	}
 
 }
 

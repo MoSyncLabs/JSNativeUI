@@ -95,6 +95,7 @@
 			"width": "100%",
 			"text": "Second Button"
 		});
+		myButton.setProperty("fontColor", "0xfffffff");
 		secondButton.addTo("mainLayout");
 		secondButton.addEventListener("Clicked", function() 
 		{
@@ -118,7 +119,7 @@
 	<div id="NativeUI">
 		<!-- the element with id="mainScreen" is loaded to the device screen  by default -->
 		<div widgetType="TabScreen" id="mainScreen">
-			<div widgetType="Screen" id="firstScreen" title="Web Screen">
+			<div widgetType="Screen" id="firstScreen" title="Web Screen" icon_android="img/TabIconWebViewAndroid.png" icon_iOS="img/TabIconWebView.png" >
 				<div widgetType="WebView" id="WebBrowser" width="100%" height="100%" url="http://www.google.com"></div>
 			</div>
 			<div widgetType="Screen" id="SecondScreen" title="Widget Screen">
@@ -126,6 +127,7 @@
 					<div widgetType="Label" id="myLabel" width="100%" text="Here is a Label" fontSize="19" fontColor="0xEE3B3B"></div>
 					<div widgetType="Button" id="myButton" width="100%" text="Click !" ></div>
 				</div>
+				
 			</div>
 		</div>
 	</div>

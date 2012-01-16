@@ -49,6 +49,20 @@ public:
 		// The page in the "LocalFiles" folder to
 		// show when the application starts.
 		showPage("index.html");
+
+		//Send the Device Screen size to JavaScript
+		MAExtent scrSize = maGetScrSize();
+		int width = EXTENT_X(scrSize);
+		int height = EXTENT_Y(scrSize);
+		char buf[512];
+		sprintf(
+				buf,
+				"{mosyncScreenWidth=%d, mosyncScreenHeight = %d;}",
+				width,
+				height);
+
+		lprintfln(buf);
+		callJS(buf);
 	}
 
 	/**

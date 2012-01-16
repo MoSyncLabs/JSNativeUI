@@ -81,8 +81,8 @@ bool ResourceMessageHandler::handleMessage(Wormhole::MessageStream& stream)
 	}
 	else if(0 == strcmp("loadRemoteImage", action))
 	{
-		const char* imageID = stream.getNext();
 		const char* imageURL = stream.getNext();
+		const char* imageID = stream.getNext();
 
 		MAHandle imageHandle = maCreatePlaceholder();
 		mImageDownloader->beginDownloading(imageURL,imageHandle);
