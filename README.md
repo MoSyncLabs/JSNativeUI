@@ -1,4 +1,5 @@
 This peoject has been moved to MoSync as a primary part of the SDK and will be released together with the next release of MoSync SDK. Therefore it is not developed and maintained in the repository anymore. For more information please see MoSync's website at: http://www.mosync.com
+
 This project is a template for creating native user experience through HTML and JavaScript for MoSync cross platform SDK. For More information please refer to the Wiki page and http://www.mosync.com.
 You can always start from this page.
 
